@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Digital Spirometer</title>
+  <style>
+  /* --- Minimal Clean UI --- */
+  :root {
+    --bg: #ffffff;
+    --text: #111;
+    --card: #f9f9f9;
+    --border: #e5e5e5;
+    --shadow: 0 2px 8px rgba(0,0,0,0.06);
+
+    --red: #ff3b30;
+    --yellow: #ffcc00;
+    --teal: #00a8b5;
+    --primary: #2b6cff;
+  }
+
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 12px;
+  }
+
+  h1 {
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0 0 16px;
+    text-align: center;
+  }
+
+  /* Layout */
+  .container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media(max-width: 900px) {
+    .container {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Video */
+  .video-wrap {
+    position: relative;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #000;
+    aspect-ratio: 4/3;
+    overflow: hidden;
+  }
+
+  video, canvas#overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Volumes */
+  .labels {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .label {
+    background: var(--card);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+  }
+
+  .red { color: var(--red); }
+  .yellow { color: var(--yellow); }
+  .teal { color: var(--teal); }
+
+  /* Buttons */
+  .controls {
+    margin-top: 18px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    padding: 10px 16px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: var(--primary);
+    color: #fff;
+  }
+
+  /* Charts */
+  .charts {
+    display: grid;
+    gap: 18px;
+  }
+
+  canvas.chart {
+    width: 100%;
+    height: 200px !important;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    padding: 10px;
+  }
+
+  footer {
+    font-size: 13px;
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+  }
+</style>
+</head>
+<body>
+  <h1>Digital Spirometer (Front-End Dashboard)</h1>
+  <div class="container">
+    <div>
+      <div class="video-wrap">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay"></canvas>
+      </div>
+      <div class="info">
+        <div class="labels">
+          <div class="label red">Red Volume: <span id="valRed">0</span> mL</div>
+          <div class="label yellow">Yellow Volume: <span id="valYellow">0</span> mL</div>
+          <div class="label teal">Teal Volume: <span id="valTeal">0</span> mL</div>
+        </div>
+        <div class="controls">
+          <button id="btnStart">Start</button>
+          <button id="btnStop">Stop</button>
+          <label>Ref Y: <input id="refY" type="range" min="200" max="480" value="400" /></label>
+          <label>Pixels/500mL: <input id="pp500" type="range" min="20" max="300" value="100" /></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts">
+      <canvas id="chartRed" class="chart" height="180"></canvas>
+      <canvas id="chartYellow" class="chart" height="180"></canvas>
+      <canvas id="chartTeal" class="chart" height="180"></canvas>
+      <footer>Open in a secure origin (https or localhost). The page samples video frames and detects three colored balls using HSV thresholds. You can tweak ref Y and pixels/500mL sliders.</footer>
+    </div>
+  </div>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    // --- Configuration (HSV in degrees, S/V 0..100) ---
+    const cfg = {
+      red1: {h1:0, h2:20, s1:40, v1:30},      // maps roughly to OpenCV [0,10]
+      red2: {h1:340, h2:360, s1:40, v1:30},    // OpenCV [170,180]
+      yellow: {h1:40, h2:70, s1:35, v1:40},    // OpenCV [20,35]
+      teal: {h1:170, h2:200, s1:35, v1:40}     // OpenCV [85,100]
+    };
+
+    // DOM
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const ctx = overlay.getContext('2d');
+    const valRed = document.getElementById('valRed');
+    const valYellow = document.getElementById('valYellow');
+    const valTeal = document.getElementById('valTeal');
+    const refYSlider = document.getElementById('refY');
+    const pp500Slider = document.getElementById('pp500');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+
+    overlay.width = 640; overlay.height = 480;
+
+    // Chart data
+    function createChart(canvas, label, color) {
+      return new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ label, borderColor: color, backgroundColor: 'transparent', data: [], tension:0.25 }] },
+        options: { animation:false, responsive:true, maintainAspectRatio:false, scales:{ x:{ display:true, title:{display:true, text:'Time (s)'} }, y:{ beginAtZero:true, suggestedMax:1500, title:{display:true, text:'mL'} } }, plugins:{ legend:{display:false}} }
+      });
+    }
+
+    const chartRed = createChart(document.getElementById('chartRed'), 'Red Volume (mL)', '#ff3b30');
+    const chartYellow = createChart(document.getElementById('chartYellow'), 'Yellow Volume (mL)', '#ffcc00');
+    const chartTeal = createChart(document.getElementById('chartTeal'), 'Teal Volume (mL)', '#00a8b5');
+
+    let streaming = false;
+    let rafId = null;
+    let startTime = null;
+
+    // Utility: convert RGB to HSV (H in degrees 0..360, S,V 0..100)
+    function rgbToHsv(r,g,b){
+      r/=255; g/=255; b/=255;
+      const max=Math.max(r,g,b), min=Math.min(r,g,b);
+      let h=0, s=0, v=max;
+      const d=max-min;
+      s = max === 0 ? 0 : d/max;
+      if(max!==min){
+        switch(max){
+          case r: h = (g-b)/d + (g<b?6:0); break;
+          case g: h = (b-r)/d + 2; break;
+          case b: h = (r-g)/d + 4; break;
+        }
+        h *= 60;
+      }
+      return [h, s*100, v*100];
+    }
+
+    function inRangeHSV(h,s,v, range){
+      // handle wrap-around for ranges where h2 > 360 or range crosses 0
+      if(range.h1 <= range.h2){
+        return h >= range.h1 && h <= range.h2 && s >= range.s1 && v >= range.v1;
+      } else {
+        // wrap
+        return (h >= range.h1 || h <= range.h2) && s >= range.s1 && v >= range.v1;
+      }
+    }
+
+    function detectCentroid(imageData, width, height, threshFunc){
+      const data = imageData.data;
+      let sumX=0, sumY=0, count=0;
+      // sample every 2 pixels for speed
+      for(let y=0;y<height;y+=2){
+        for(let x=0;x<width;x+=2){
+          const i = (y*width + x)*4;
+          const r = data[i], g = data[i+1], b = data[i+2];
+          const [h,s,v] = rgbToHsv(r,g,b);
+          if(threshFunc(h,s,v)){
+            sumX += x; sumY += y; count++;
+          }
+        }
+      }
+      if(count === 0) return null;
+      return {cx: Math.round(sumX/count), cy: Math.round(sumY/count), area: count};
+    }
+
+    function frameProcessor(){
+      if(!streaming) return;
+      const w = overlay.width, h = overlay.height;
+      ctx.drawImage(video,0,0,w,h);
+      const frame = ctx.getImageData(0,0,w,h);
+
+      // detection functions using cfg
+      const redThresh = (hDeg,s,v) => ((hDeg>=cfg.red1.h1 && hDeg<=cfg.red1.h2) || (hDeg>=cfg.red2.h1 && hDeg<=cfg.red2.h2)) && s>=cfg.red1.s1 && v>=cfg.red1.v1;
+      const yellowThresh = (hDeg,s,v) => (hDeg>=cfg.yellow.h1 && hDeg<=cfg.yellow.h2) && s>=cfg.yellow.s1 && v>=cfg.yellow.v1;
+      const tealThresh = (hDeg,s,v) => ( (hDeg>=cfg.teal.h1 && hDeg<=cfg.teal.h2) ) && s>=cfg.teal.s1 && v>=cfg.teal.v1;
+
+      const rC = detectCentroid(frame, w, h, redThresh);
+      const yC = detectCentroid(frame, w, h, yellowThresh);
+      const tC = detectCentroid(frame, w, h, tealThresh);
+
+      // draw markers
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath(); ctx.rect(0,0,w,30); ctx.fill(); ctx.closePath();
+
+      const refY = parseInt(refYSlider.value,10);
+      ctx.strokeStyle = '#444'; ctx.beginPath(); ctx.moveTo(0,refY); ctx.lineTo(w,refY); ctx.stroke();
+
+      function computeVolume(c, colorName, colorStr, labelEl, chart, yOffset){
+        let vol = 0;
+        if(c){
+          // area filter similar to python (since we sampled, scale area)
+          if(c.area > 50 && c.area < 8000){
+            // draw circle
+            ctx.strokeStyle = colorStr; ctx.beginPath(); ctx.arc(c.cx,c.cy,20,0,Math.PI*2); ctx.stroke();
+            ctx.fillStyle = colorStr; ctx.fillRect(c.cx-2,c.cy-2,4,4);
+            const displacement = Math.max(0, refY - c.cy);
+            const pp500 = parseInt(pp500Slider.value,10);
+            const volume_per_pixel = 500 / pp500;
+            vol = displacement * volume_per_pixel;
+          }
+        }
+        labelEl.textContent = vol.toFixed(1);
+        // push to chart
+        const t = ((Date.now()-startTime)/1000).toFixed(2);
+        chart.data.labels.push(t);
+        chart.data.datasets[0].data.push(vol);
+        if(chart.data.labels.length>200){ chart.data.labels.shift(); chart.data.datasets[0].data.shift(); }
+        chart.update('none');
+      }
+
+      computeVolume(rC, 'Red', '#ff3b30', valRed, chartRed);
+      computeVolume(yC, 'Yellow', '#ffcc00', valYellow, chartYellow);
+      computeVolume(tC, 'Teal', '#00a8b5', valTeal, chartTeal);
+
+      rafId = requestAnimationFrame(frameProcessor);
+    }
+
+    async function startCamera(){
+      if(streaming) return;
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({ video:{ width:640, height:480 }, audio:false });
+        video.srcObject = stream;
+        await video.play();
+        streaming = true; startTime = Date.now();
+        rafId = requestAnimationFrame(frameProcessor);
+      }catch(e){
+        alert('Camera access denied or not available. Open on HTTPS or localhost.');
+        console.error(e);
+      }
+    }
+
+    function stopCamera(){
+      if(!streaming) return;
+      const s = video.srcObject;
+      if(s){
+        s.getTracks().forEach(track=>track.stop());
+      }
+      streaming = false;
+      if(rafId) cancelAnimationFrame(rafId);
+    }
+
+    btnStart.addEventListener('click', startCamera);
+    btnStop.addEventListener('click', stopCamera);
+
+    // start automatically on load for convenience
+    window.addEventListener('load', ()=>{
+      // no automatic start to avoid permission prompt until user clicks
+    });
+  </script>
+</body>
+</html>
