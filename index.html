@@ -4,231 +4,434 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Digital Spirometer Live Dashboard</title>
+  <title>Digital Spirometer</title>
   <style>
     :root {
-      --bg: #fff;
-      --text: #111;
-      --card: #fafafa;
-      --border: #e5e5e5;
-      --green: #22c55e;
-      --yellow: #f59e0b;
-      --blue: #2563eb;
-    }
+  --bg: #fff;
+  --text: #111;
+  --card: #fafafa;
+  --border: #e5e5e5;
+  --green: #22c55e;
+  --yellow: #f59e0b;
+  --blue: #2563eb; /* FIXED */
+}
 
-    body {
-      font-family: Inter, system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 16px;
-    }
 
-    h1 {
-      text-align: center;
-      font-size: 22px;
-      font-weight: 600;
-      margin: 0 0 16px;
-    }
-
-    .container {
-      display: grid;
-      grid-template-columns: 1fr 420px;
-      gap: 20px;
-    }
-
-    @media(max-width:900px) {
-      .container {
-        grid-template-columns: 1fr;
+      body {
+        font-family: Inter, system-ui, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        padding: 16px;
+        margin: 0
       }
-    }
 
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-    }
+      h1 {
+        text-align: center;
+        font-size: 22px;
+        margin: 0 0 16px
+      }
 
-    .video-wrap {
-      width: 70%;
-      margin: auto;
-      position: relative;
-      aspect-ratio: 4/3;
-      background: #000;
-      border-radius: 10px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-    }
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        gap: 20px
+      }
 
-    video,
-    canvas#overlay {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+      @media(max-width:900px) {
+        .container {
+          grid-template-columns: 1fr
+        }
+      }
 
-    .labels {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 12px;
-    }
+      .panel {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px
+      }
 
-    .label {
-      padding: 8px 14px;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-weight: 600;
-    }
+      .video-wrap {
+        width: 70%;
+        margin: auto;
+        position: relative;
+        aspect-ratio: 4/3;
+        background: #000;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--border)
+      }
 
-    .g {
-      color: var(--green);
-    }
+      video,
+      canvas#overlay,
+      canvas#mask {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover
+      }
 
-    .y {
-      color: var(--yellow);
-    }
+      .labels {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 12px
+      }
 
-    .b {
-      color: var(--blue);
-    }
+      .label {
+        padding: 8px 14px;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-weight: 600
+      }
 
-    .num {
-      margin-left: 6px;
-      font-weight: 700;
-    }
+      .g {
+        color: var(--green)
+      }
 
-    .controls {
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin-top: 14px;
-    }
+      .y {
+        color: var(--yellow)
+      }
 
-    button {
-      padding: 8px 14px;
-      border: none;
-      border-radius: 8px;
-      background: var(--blue);
-      color: #fff;
-      cursor: pointer;
-    }
+      .b {
+        color: var(--blue)
+      }
 
-    input[type=range] {
-      width: 140px;
-    }
+      .num {
+        margin-left: 6px;
+        font-weight: 700
+      }
 
-    .charts {
-      display: grid;
-      gap: 14px;
-    }
+      .controls {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+        margin-top: 14px
+      }
 
-    canvas.chart {
-      width: 100%;
-      height: 150px !important;
-      background: #fff;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-    }
+      button {
+        padding: 8px 14px;
+        border: none;
+        border-radius: 8px;
+        background: var(--blue);
+        color: #fff;
+        cursor: pointer
+      }
+
+      input[type=range] {
+        width: 140px
+      }
+
+      .charts {
+        display: grid;
+        gap: 14px
+      }
+
+      .charts canvas {
+        width: 100%;
+        height: 150px !important;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 10px
+      }
+
+      footer {
+        font-size: 13px;
+        color: #666;
+        text-align: center;
+        margin-top: 12px
+      }
+
+      .tuner {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: center;
+        margin-top: 10px
+      }
+
+      .small {
+        font-size: 12px;
+        color: #444
+      }
+
+      .muted {
+        opacity: 0.7
+      }
+
+      .top-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        justify-content: center
+      }
   </style>
 </head>
 
 <body>
   <h1>Digital Spirometer - Live Dashboard</h1>
+
   <div class="container">
     <div>
       <div class="panel video-wrap">
         <video id="video" autoplay playsinline muted></video>
+        <!-- overlay: main drawing layer -->
         <canvas id="overlay"></canvas>
+        <!-- mask: shows detected pixels (visible by default). Toggle by CSS or JS if you prefer hidden -->
+        <canvas id="mask" style="mix-blend-mode:screen;opacity:0.9"></canvas>
       </div>
+
       <div class="panel" style="margin-top:14px;">
         <div class="labels">
           <div class="label g">Green: <span id="valG" class="num">0</span> mL</div>
           <div class="label y">Yellow: <span id="valY" class="num">0</span> mL</div>
           <div class="label b">Blue: <span id="valB" class="num">0</span> mL</div>
         </div>
+
         <div class="controls">
           <button id="startBtn">Start</button>
           <button id="stopBtn">Stop</button>
-          <label>Ref Y: <input id="refY" type="range" min="120" max="460" value="400" /></label>
-          <label>Pixels/500mL: <input id="pp500" type="range" min="30" max="300" value="100" /></label>
+          <label class="small">Ref Y: <input id="refY" type="range" min="40" max="440" value="400" /></label>
+          <label class="small">Pixels/500mL: <input id="pp500" type="range" min="30" max="300" value="100" /></label>
         </div>
+
+        <div class="tuner">
+          <div class="small muted">Mask visible for debugging. To hide: set <code>mask.style.opacity=0</code> or remove
+            the mask canvas.</div>
+        </div>
+
       </div>
     </div>
 
     <div>
       <div class="panel">
         <div class="charts">
-          <canvas id="chartG" class="chart"></canvas>
-          <canvas id="chartY" class="chart"></canvas>
-          <canvas id="chartB" class="chart"></canvas>
+          <canvas id="chartG"></canvas>
+          <canvas id="chartY"></canvas>
+          <canvas id="chartB"></canvas>
         </div>
+        <footer>Open on HTTPS or localhost. If detection misses, increase room light and bring balls closer to the
+          camera.</footer>
       </div>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    const thresholds = { green: { h1: 45, h2: 80, s: 58, v: 58 }, yellow: { h1: 22, h2: 32, s: 62, v: 62 }, blue: { h1: 100, h2: 130, s: 70, v: 47 } };
-    const video = document.getElementById('video'), overlay = document.getElementById('overlay'); const ctx = overlay.getContext('2d'); overlay.width = 640; overlay.height = 480;
-    const valG = document.getElementById('valG'), valY = document.getElementById('valY'), valB = document.getElementById('valB');
-    const refYSlider = document.getElementById('refY'), pp500Slider = document.getElementById('pp500');
+    // --- thresholds (HSV: H degrees, S/V percent) ---
+    const thresholds = {
+      green: { h1: 45, h2: 80, s: 40, v: 40 },
+      yellow: { h1: 18, h2: 38, s: 35, v: 45 },
+      blue: { h1: 85, h2: 150, s: 35, v: 35 }
+    };
 
-    function createChart(el, label, color, max) { return new Chart(el.getContext('2d'), { type: 'line', data: { labels: [], datasets: [{ label, data: [], borderColor: color, backgroundColor: 'transparent', tension: .25 }] }, options: { animation: false, responsive: true, scales: { x: { display: false }, y: { beginAtZero: true, suggestedMax: max } }, plugins: { legend: { display: false } } } }); }
-    const chartG = createChart(document.getElementById('chartG'), 'Green', 'rgb(34,197,94)', 600);
-    const chartY = createChart(document.getElementById('chartY'), 'Yellow', 'rgb(245,158,11)', 900);
-    const chartB = createChart(document.getElementById('chartB'), 'Blue', 'rgb(37,99,235)', 1200);
+    const video = document.getElementById('video');
+    const overlay = document.getElementById('overlay');
+    const mask = document.getElementById('mask');
+    const ctx = overlay.getContext('2d');
+    const mctx = mask.getContext('2d');
+
+    // logical canvas size (will be adjusted to actual track size on start)
+    overlay.width = 640; overlay.height = 480;
+    mask.width = overlay.width; mask.height = overlay.height;
+
+    const valG = document.getElementById('valG');
+    const valY = document.getElementById('valY');
+    const valB = document.getElementById('valB');
+    const refYSlider = document.getElementById('refY');
+    const pp500Slider = document.getElementById('pp500');
+
+    function createChart(el, label, max) {
+      return new Chart(el.getContext('2d'), {
+        type: 'line',
+        data: { labels: [], datasets: [{ label, data: [], borderColor: 'black', backgroundColor: 'transparent', tension: 0.25 }] },
+        options: { animation: false, responsive: true, maintainAspectRatio: false, scales: { x: { display: false }, y: { beginAtZero: true, suggestedMax: max } }, plugins: { legend: { display: false } } }
+      });
+    }
+
+    const chartG = createChart(document.getElementById('chartG'), 'Green (600 mL/sec)', 600);
+    const chartY = createChart(document.getElementById('chartY'), 'Yellow (900 mL/sec)', 900);
+    const chartB = createChart(document.getElementById('chartB'), 'Blue (1200 mL/sec)', 1200);
 
     let streaming = false, raf = null, startTime = null;
 
-    function rgbToHsv(r, g, b) { r /= 255; g /= 255; b /= 255; let max = Math.max(r, g, b), min = Math.min(r, g, b); let h = 0, s = 0, v = max, d = max - min; s = max === 0 ? 0 : d / max; if (max !== min) { switch (max) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; }h *= 60; } return [h, s * 100, v * 100]; }
+    // RGB (0-255) -> HSV (H degrees 0..360, S/V 0..100)
+    function rgbToHsv(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      let h = 0, s = 0, v = mx;
+      const d = mx - mn;
+      s = mx === 0 ? 0 : d / mx;
+      if (d !== 0) {
+        if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+        else if (mx === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+        h *= 60;
+      }
+      return [h, s * 100, v * 100];
+    }
 
+    // Improved detectColor with mask visualization and relaxed filters
     function detectColor(frame, w, h, t) {
-      const d = frame.data; let sumX = 0, sumY = 0, count = 0, minX = w, minY = h, maxX = 0, maxY = 0;
-      for (let y = 0; y < h; y += 2) {
-        for (let x = 0; x < w; x += 2) {
-          const i = (y * w + x) * 4; let R = d[i], G = d[i + 1], B = d[i + 2]; const [H, S, V] = rgbToHsv(R, G, B);
-          const match = (t.h1 <= t.h2) ? (H >= t.h1 && H <= t.h2) : (H >= t.h1 || H <= t.h2);
-          if (match && S >= t.s && V >= t.v) { sumX += x; sumY += y; count++; if (x < minX) minX = x; if (y < minY) minY = y; if (x > maxX) maxX = x; if (y > maxY) maxY = y; }
+      const d = frame.data;
+      let sumX = 0, sumY = 0, count = 0;
+      let minX = w, minY = h, maxX = 0, maxY = 0;
+
+      const step = 2; // sample every 2 pixel for speed
+
+      // prepare mask image buffer
+      const maskImg = mctx.createImageData(w, h);
+      const md = maskImg.data;
+
+      for (let y = 0; y < h; y += step) {
+        for (let x = 0; x < w; x += step) {
+          const i = (y * w + x) * 4;
+          const R = d[i], G = d[i + 1], B = d[i + 2];
+          const [H, S, V] = rgbToHsv(R, G, B);
+          const inH = (t.h1 <= t.h2) ? (H >= t.h1 && H <= t.h2) : (H >= t.h1 || H <= t.h2);
+          if (inH && S >= t.s && V >= t.v) {
+            sumX += x; sumY += y; count++;
+            if (x < minX) minX = x; if (y < minY) minY = y;
+            if (x > maxX) maxX = x; if (y > maxY) maxY = y;
+
+            // paint sample block in mask buffer (visible block = step x step)
+            for (let yy = 0; yy < step; yy++) {
+              for (let xx = 0; xx < step; xx++) {
+                const mx = ((y + yy) * w + (x + xx)) * 4;
+                md[mx] = R; md[mx + 1] = G; md[mx + 2] = B; md[mx + 3] = 160; // semi transparent
+              }
+            }
+          }
         }
       }
+
+      // draw mask to mask canvas
+      mctx.putImageData(maskImg, 0, 0);
+
       if (count === 0) return null;
-      const cx = Math.round(sumX / count), cy = Math.round(sumY / count); const bw = maxX - minX || 1, bh = maxY - minY || 1; const aspect = bw / bh;
-      const boxArea = bw * bh; const density = count / boxArea;
-      if (aspect < 0.75 || aspect > 1.35) return null;
-      if (density < 0.25 || density > 0.95) return null;
-      if (count < 60 || count > 5000) return null;
-      const circ = density; if (circ < 0.40 || circ > 0.88) return null;
+
+      const cx = Math.round(sumX / count);
+      const cy = Math.round(sumY / count);
+      const bw = Math.max(1, maxX - minX);
+      const bh = Math.max(1, maxY - minY);
+      const aspect = bw / bh;
+      const boxArea = bw * bh;
+      const density = count / boxArea;
+
+      // relaxed & sensible filters
+      if (aspect < 0.45 || aspect > 2.5) return null; // allow more oval shapes
+      if (density < 0.06 || density > 0.98) return null; // accept sparser matches
+      if (count < 8 || count > (w * h * 0.8)) return null;
+
       return { cx, cy, area: count, w: bw, h: bh, aspect, density };
     }
 
-    function computeVolume(c, refY, pp, max) { if (!c) return 0; const disp = Math.max(0, refY - c.cy); return Math.min(disp * (500 / pp), max); }
+    function computeVolume(c, refY, pp, max) {
+      if (!c) return 0;
+      const displacement = Math.max(0, refY - c.cy);
+      const v = displacement * (500 / pp);
+      return Math.min(v, max);
+    }
+
+    function drawMarker(c, col) {
+      if (!c) return;
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(c.cx, c.cy, 20, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.fillRect(c.cx - 2, c.cy - 2, 4, 4);
+      // bounding rect for visual debugging
+      ctx.strokeRect(c.cx - c.w / 2, c.cy - c.h / 2, c.w, c.h);
+    }
 
     function frameLoop() {
-      if (!streaming) return; const w = overlay.width, h = overlay.height; ctx.drawImage(video, 0, 0, w, h); const frame = ctx.getImageData(0, 0, w, h);
-      const cG = detectColor(frame, w, h, thresholds.green), cY = detectColor(frame, w, h, thresholds.yellow), cB = detectColor(frame, w, h, thresholds.blue);
-      const refY = parseInt(refYSlider.value); ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.moveTo(0, refY); ctx.lineTo(w, refY); ctx.stroke();
-      const pp = parseInt(pp500Slider.value);
-      const vG = computeVolume(cG, refY, pp, 600), vY = computeVolume(cY, refY, pp, 900), vB = computeVolume(cB, refY, pp, 1200);
-      function mark(c, col) { if (!c) return; ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(c.cx, c.cy, 16, 0, 6.28); ctx.stroke(); }
-      mark(cG, 'rgb(34,197,94)'); mark(cY, 'rgb(245,158,11)'); mark(cB, 'rgb(37,99,235)');
-      valG.textContent = vG.toFixed(1); valY.textContent = vY.toFixed(1); valB.textContent = vB.toFixed(1);
+      if (!streaming) return;
+      const w = overlay.width, h = overlay.height;
+      ctx.drawImage(video, 0, 0, w, h);
+
+      // clear mask each frame (detectColor repaints it)
+      mctx.clearRect(0, 0, mask.width, mask.height);
+
+      const frame = ctx.getImageData(0, 0, w, h);
+
+      const cG = detectColor(frame, w, h, thresholds.green);
+      const cY = detectColor(frame, w, h, thresholds.yellow);
+      const cB = detectColor(frame, w, h, thresholds.blue);
+
+      const refY = parseInt(refYSlider.value, 10);
+      // draw reference line
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(0, refY); ctx.lineTo(w, refY); ctx.stroke();
+
+      const pp = parseInt(pp500Slider.value, 10);
+      const vG = computeVolume(cG, refY, pp, 600);
+      const vY = computeVolume(cY, refY, pp, 900);
+      const vB = computeVolume(cB, refY, pp, 1200);
+
+      drawMarker(cG, 'rgba(34,197,94,0.95)');
+      drawMarker(cY, 'rgba(245,158,11,0.95)');
+      drawMarker(cB, 'rgba(37,99,235,0.95)');
+
+      valG.textContent = vG.toFixed(1);
+      valY.textContent = vY.toFixed(1);
+      valB.textContent = vB.toFixed(1);
+
       const t = ((Date.now() - startTime) / 1000).toFixed(2);
-      function push(ch, v) { ch.data.labels.push(t); ch.data.datasets[0].data.push(v); if (ch.data.labels.length > 200) { ch.data.labels.shift(); ch.data.datasets[0].data.shift(); } ch.update('none'); }
-      push(chartG, vG); push(chartY, vY); push(chartB, vB);
+      function pushChart(ch, val) {
+        ch.data.labels.push(t);
+        ch.data.datasets[0].data.push(val);
+        if (ch.data.labels.length > 200) { ch.data.labels.shift(); ch.data.datasets[0].data.shift(); }
+        ch.update('none');
+      }
+      pushChart(chartG, vG);
+      pushChart(chartY, vY);
+      pushChart(chartB, vB);
+
       raf = requestAnimationFrame(frameLoop);
     }
 
-    async function start() { if (streaming) return; try { const s = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }); video.srcObject = s; await video.play(); streaming = true; startTime = Date.now(); raf = requestAnimationFrame(frameLoop); } catch (e) { alert('Camera blocked. Use HTTPS or localhost'); } }
-    function stop() { if (!streaming) return; const s = video.srcObject; if (s) s.getTracks().forEach(t => t.stop()); streaming = false; if (raf) cancelAnimationFrame(raf); }
+    async function start() {
+      if (streaming) return;
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+        video.srcObject = s; await video.play();
 
-    document.getElementById('startBtn').onclick = start; document.getElementById('stopBtn').onclick = stop;
+        // sync canvases with actual track size for accurate sampling
+        const settings = s.getVideoTracks()[0].getSettings();
+        const vw = settings.width || 640; const vh = settings.height || 480;
+        overlay.width = mask.width = vw; overlay.height = mask.height = vh;
+        overlay.style.width = mask.style.width = '100%'; overlay.style.height = mask.style.height = '100%';
+
+        ctx.imageSmoothingEnabled = false; mctx.imageSmoothingEnabled = false;
+
+        streaming = true; startTime = Date.now(); raf = requestAnimationFrame(frameLoop);
+      } catch (e) {
+        alert('Camera access denied or not available. Open on HTTPS or localhost and allow camera.');
+        console.error(e);
+      }
+    }
+
+    function stop() {
+      if (!streaming) return;
+      const s = video.srcObject;
+      if (s) s.getTracks().forEach(t => t.stop());
+      streaming = false;
+      if (raf) cancelAnimationFrame(raf);
+    }
+
+    document.getElementById('startBtn').addEventListener('click', start);
+    document.getElementById('stopBtn').addEventListener('click', stop);
+
+    // convenience: press space to toggle start/stop
+    window.addEventListener('keydown', (e) => { if (e.code === 'Space') { e.preventDefault(); if (streaming) stop(); else start(); } });
+
   </script>
 </body>
 
